@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Missão Robô - Pegue os Tesouros!</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: sans-serif;
+      background-image: url("imagem/fundo.jpg");
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 10px;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    h2 {
+      font-size: 40px;
+      color: white;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px black;
+      margin: 10px 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 50px);
+      grid-template-rows: repeat(5, 50px);
+      gap: 4px;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 8px;
+      border-radius: 10px;
+    }
+
+    .cell {
+      width: 50px;
+      height: 50px;
+      background-color: white;
+      border: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 50px);
+      grid-template-rows: repeat(3, 50px);
+      gap: 4px;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 8px;
+      border-radius: 10px;
+      margin: 10px;
+    }
+
+    .controls button {
+      font-size: 22px;
+      background-color: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .empty {
+      visibility: hidden;
+    }
+
+    .reiniciar {
+      font-size: 18px;
+      padding: 8px 16px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      margin: 5px;
+    }
+
+    .reiniciar:hover {
+      background-color: #d32f2f;
+    }
+
+    .info {
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 5px;
+    }
+
+    .animacao-final {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 36px;
+      z-index: 9999;
+      animation: fadeIn 1s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Missão Robô 🤖💰</h2>
+  <div class="grid" id="grid"></div>
+  <div class="info" id="info"></div>
+  <div class="controls">
+    <div class="empty"></div>
+    <button onclick="move('up')">⬆️</button>
+    <div class="empty"></div>
+    <button onclick="move('left')">⬅️</button>
+    <div class="empty"></div>
+    <button onclick="move('right')">➡️</button>
+    <div class="empty"></div>
+    <button onclick="move('down')">⬇️</button>
+    <div class="empty"></div>
+  </div>
+  <button class="reiniciar" onclick="reiniciar()">🔁 Reiniciar</button>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const info = document.getElementById("info");
+    const size = 5;
+    const roboInicial = { x: 0, y: size - 1 };
+    let roboPos = { ...roboInicial };
+    let movimentos = 0;
+    let tesouros = [];
+    let totalTesouros = 3;
+
+    const sons = {
+      up: new Audio("audio/pcima.mp3"),
+      down: new Audio("audio/pbaixo.mp3"),
+      left: new Audio("audio/pesquerda.mp3"),
+      right: new Audio("audio/pdireita.mp3"),
+      pega: new Audio("audio/pegou.mp3"),
+      final: new Audio("audio/final.mp3")
+    };
+
+    function tocarSom(nome) {
+      const som = sons[nome];
+      if (som) {
+        som.currentTime = 0;
+        som.play();
+      }
+    }
+
+    function gerarTesouros() {
+      tesouros = [];
+      while (tesouros.length < totalTesouros) {
+        const tx = Math.floor(Math.random() * size);
+        const ty = Math.floor(Math.random() * size);
+        if (!(tx === roboPos.x && ty === roboPos.y)) {
+          if (!tesouros.some(t => t.x === tx && t.y === ty)) {
+            tesouros.push({ x: tx, y: ty });
+          }
+        }
+      }
+    }
+
+    function createGrid() {
+      grid.innerHTML = "";
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          if (x === roboPos.x && y === roboPos.y) {
+            cell.textContent = "🤖";
+          } else if (tesouros.some(t => t.x === x && t.y === y)) {
+            cell.textContent = "💰";
+          }
+          grid.appendChild(cell);
+        }
+      }
+      info.textContent = `Movimentos: ${movimentos} | Tesouros restantes: ${tesouros.length}`;
+    }
+
+    function move(direction) {
+      const oldX = roboPos.x;
+      const oldY = roboPos.y;
+
+      switch (direction) {
+        case 'up': if (roboPos.y > 0) roboPos.y--; break;
+        case 'down': if (roboPos.y < size - 1) roboPos.y++; break;
+        case 'left': if (roboPos.x > 0) roboPos.x--; break;
+        case 'right': if (roboPos.x < size - 1) roboPos.x++; break;
+      }
+
+      if (roboPos.x !== oldX || roboPos.y !== oldY) {
+        movimentos++;
+        tocarSom(direction);
+        coletarTesouro();
+        createGrid();
+      }
+    }
+
+    function coletarTesouro() {
+      const index = tesouros.findIndex(t => t.x === roboPos.x && t.y === roboPos.y);
+      if (index !== -1) {
+        tesouros.splice(index, 1);
+        tocarSom("pega");
+        if (tesouros.length === 0) {
+          tocarSom("final");
+          setTimeout(() => {
+            const mensagem = document.createElement("div");
+            mensagem.className = "animacao-final";
+            mensagem.textContent = `🎉 Parabéns! Você pegou todos os tesouros em ${movimentos} movimentos! 🎉`;
+            document.body.appendChild(mensagem);
+
+            setTimeout(() => {
+              mensagem.remove();
+              reiniciar();
+            }, 5000);
+          }, 300);
+        }
+      }
+    }
+
+    function reiniciar() {
+      roboPos = { ...roboInicial };
+      movimentos = 0;
+      gerarTesouros();
+      createGrid();
+      const anim = document.querySelector('.animacao-final');
+      if (anim) anim.remove();
+    }
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "ArrowUp") move("up");
+      else if (event.key === "ArrowDown") move("down");
+      else if (event.key === "ArrowLeft") move("left");
+      else if (event.key === "ArrowRight") move("right");
+    });
+
+    gerarTesouros();
+    createGrid();
+  </script>
+</body>
+</html>
